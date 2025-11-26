@@ -3,7 +3,7 @@ defaults:
   - dir: local
   - feature: dino_giant
   - model: lasso
-  - training: ml_default
+  - training: default
   - override hydra/job_logging: disabled
 
 exp_name: ml_baseline

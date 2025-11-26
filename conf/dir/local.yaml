@@ -1,3 +1,4 @@
 data_dir: ./data
 output_dir: ./output
 code_dir: .
+data_limit: 10

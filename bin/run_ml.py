@@ -25,6 +25,11 @@ def main(cfg: DictConfig):
     
     # ★ ここで preprocessing の関数を使用
     train_img_paths = get_unique_image_paths(train_df, root)
+
+    limit = cfg.dir.data_limit
+    if limit is not None:
+        print(f"⚠️ Debug Mode: Limiting data to {limit} samples.")
+        train_img_paths = train_img_paths[:limit]
     
     print(f"Extracting features for {len(train_img_paths)} training images...")
     train_embeds = extractor.extract(train_img_paths)
