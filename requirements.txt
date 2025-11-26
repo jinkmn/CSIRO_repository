@@ -1,7 +1,7 @@
 hydra-core
 omegaconf
 pandas
-numpy
+numpy<2.0
 scikit-learn
 tqdm
 Pillow
