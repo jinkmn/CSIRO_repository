@@ -6,6 +6,7 @@ __pycache__/
 .env
 kaggle.json
 .ipynb_checkpoints/
+.venv/
 
 # データセットと出力結果
 /data/

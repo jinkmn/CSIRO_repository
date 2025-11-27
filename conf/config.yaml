@@ -6,7 +6,7 @@ defaults:
   - training: default
   - override hydra/job_logging: disabled
 
-exp_name: ml_baseline
+exp_name: test
 
 hydra:
   run:
