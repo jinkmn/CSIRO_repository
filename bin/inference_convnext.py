@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from pathlib import Path
+import hydra
 
 # srcをインポート可能にする
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
