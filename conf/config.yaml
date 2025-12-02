@@ -1,12 +1,19 @@
 defaults:
   - _self_
   - dir: local
-  - feature: dino_giant
-  - model: lasso
-  - training: default
+
+  # === 使用するコンポーネント ===
+  # DINO+Lassoのときは feature, model, training
+  # ConvNeXtのときは model, inference
+
+  # デフォルト（とりあえずnullにしておくか、よく使うものを指定）
+  - feature: null
+  - model: convnext # 今回追加したもの
+  - inference: convnext # 今回追加したもの
+  - training: null # 推論だけなら不要
   - override hydra/job_logging: disabled
 
-exp_name: test
+exp_name: convnext_inference
 
 hydra:
   run:

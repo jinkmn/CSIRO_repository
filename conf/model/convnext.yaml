@@ -1,0 +1,4 @@
+# src.models.BiomassModel を使う
+_target_: src.models.BiomassModel
+model_name: "convnext_small"
+pretrained: false # 推論時は独自の重みをロードするのでFalse
