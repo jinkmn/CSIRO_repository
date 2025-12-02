@@ -27,7 +27,7 @@ class DualStreamDataset(Dataset):
         self.target_cols = target_cols
         
         # 画像パスのリスト
-        self.image_paths = df['image_path'].values
+        self.image_paths = df['image_path'].apply(lambda x: os.path.join('test', x)).values
         
         # ターゲットがある場合は保持
         if return_target and target_cols:

@@ -49,14 +49,6 @@ class PredictionProcessor:
             value_name='target'
         )
         
-        # 5. 元のtest.csv (sample_idを持つ) とマージして順序を復元
-        # test_dfに全行が含まれている場合、ここでマージが必要
-        # 注意: 呼び出し元で test_df がユニークか全行かによって処理が変わりますが、
-        # ここでは「全行持っているtest_df」とマージする安全な方法をとります。
-        
-        # sample_idが必要なので、image_pathとtarget_nameをキーにして結合したいが、
-        # test_dfの形状が不明なため、汎用的に sample_id を構築してマージする手法をとります。
-        
         # sample_id = "image_pathのファイル名__target_name" の構造を利用
         preds_long['filename'] = preds_long['image_path'].apply(lambda x: Path(x).name)
         preds_long['sample_id'] = preds_long['filename'] + '__' + preds_long['target_name']

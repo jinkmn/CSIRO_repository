@@ -157,7 +157,7 @@ def main(cfg: DictConfig):
     processor = PredictionProcessor(all_target_cols=cfg.inference.all_target_cols)
     
     # test_df(全行)を渡して、sample_idとマージしてもらう
-    submission = processor.create_submission(final_preds, test_df)
+    submission = processor.create_submission(final_preds, test_df_unique)
     
     # 保存
     save_path = os.path.join(os.getcwd(), "submission.csv")
