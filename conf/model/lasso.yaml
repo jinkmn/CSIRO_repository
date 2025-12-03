@@ -1,2 +1,2 @@
-_target_: src.models.regressor.LassoEnsemble
+_target_: sklearn.linear_model.Lasso
 alpha: 1.0

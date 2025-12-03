@@ -68,7 +68,7 @@ def main(cfg: DictConfig):
 
         n_splits = cfg.training.n_splits
         seed = cfg.training.random_state
-        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
         fold_scores = []
     
