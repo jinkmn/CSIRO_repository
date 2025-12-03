@@ -3,4 +3,5 @@ data_dir: /kaggle/input/csiro-biomass # コンペのデータセット名に合�
 output_dir: /kaggle/working
 code_dir: /kaggle/input/csiro-code # アップロードしたコードDatasetのパス
 model_weight_dir: /kaggle/input/csiro-exp3/convnext_exp3 # モデル重みをアップロードしたDatasetのパス
+dino_giant_path: /kaggle/input/dinov2/pytorch/giant/1
 data_limit: null
