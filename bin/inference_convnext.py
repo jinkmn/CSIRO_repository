@@ -35,6 +35,8 @@ def main(cfg: DictConfig):
     if not test_csv_path.exists():
         raise FileNotFoundError(f"Test CSV not found: {test_csv_path}")
     
+
+
     test_df = pd.read_csv(test_csv_path)
     
     # ★ デバッグ用: データ件数の制限 (local.yamlで data_limit: 10 としている場合など)
@@ -159,10 +161,12 @@ def main(cfg: DictConfig):
     # test_df(全行)を渡して、sample_idとマージしてもらう
     submission = processor.create_submission(final_preds, test_df_unique)
     
-    # 保存
-    save_path = os.path.join(os.getcwd(), "submission.csv")
-    submission.to_csv(save_path, index=False)
-    print(f"Saved submission to {save_path}")
+    save_dir = Path(cfg.dir.output_dir) / cfg.exp_name
+    
+    # 2. ディレクトリが存在しない場合は作成する (重要)
+    save_dir.mkdir(parents=True, exist_ok=True)
+    submission.to_csv(save_dir, index=False)
+    print(f"Saved submission to {save_dir}")
 
 if __name__ == "__main__":
     main()

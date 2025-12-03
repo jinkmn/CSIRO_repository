@@ -5,12 +5,14 @@ import hydra
 from omegaconf import DictConfig
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import KFold
+
 
 # srcパスの追加
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-# 【New】前処理モジュールのインポート
 from src.data.preprocessing import get_unique_image_paths, prepare_train_xy, parse_test_row, TARGET_COLUMNS
+from src.utils.utils import calc_metrics
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig):
@@ -51,24 +53,57 @@ def main(cfg: DictConfig):
 
     # --- 4. 回帰モデルの学習 ---
     print("Training Regressors...")
-    trained_models = {}
+    trained_models = {i: [] for i in range(5)}
+    
+    # OOF保存用リスト
+    oof_results = []
     
     for i in range(5):
         target_name = TARGET_COLUMNS[i]
         X = np.array(targets_data[i]['X'])
         y = np.array(targets_data[i]['y'])
-        
-        # モデル生成
-        model = hydra.utils.instantiate(cfg.model)
-        model.n_splits = cfg.training.n_splits
-        model.random_state = cfg.training.random_state
-        
-        # 学習
-        oof_preds = model.fit_predict(X, y)
-        trained_models[i] = model
-        
-        mse = np.mean((y - oof_preds)**2)
-        print(f"  Target: {target_name} | MSE: {mse:.4f}")
+        img_path = np.array(targets_data[i]['image_path'])
+
+        oof_preds = np.zeros(len(y))
+
+        n_splits = cfg.training.n_splits
+        seed = cfg.training.random_state
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+        fold_scores = []
+    
+        for fold, (train_idxs, val_idxs) in enumerate(kf.split(X)):
+            X_train, y_train = X[train_idxs], y[train_idxs]
+            X_val, y_val = X[val_idxs], y[val_idxs]
+
+            model = hydra.utils.instantiate(cfg.model)
+            if hasattr(model, 'n_splits'): model.n_splits = n_splits
+            if hasattr(model, 'random_state'): model.random_state = seed
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_val).flatten()
+            oof_preds[val_idxs] = y_pred
+            trained_models[i].append(model)
+            rmse, r2 = calc_metrics(y_val, y_pred)
+            fold_scores.append((rmse, r2))
+            print(f"  Fold {fold}: RMSE={rmse:.4f}, R2={r2:.4f}")
+
+        total_rmse, total_r2 = calc_metrics(y, oof_preds)
+        print(f" >> [Overall] Target: {target_name} | RMSE: {total_rmse:.4f} | R2: {total_r2:.4f}")
+        temp_df = pd.DataFrame({
+            'target_idx': i,
+            'target_name': target_name,
+            'image_path': img_path, # 後で分析しやすいように画像パスも保存
+            'y_true': y,
+            'y_pred_oof': oof_preds
+        })
+        oof_results.append(temp_df)
+    
+    oof_df = pd.concat(oof_results).reset_index(drop=True)
+    oof_df['sample_id'] = oof_df['image_path'].astype(str) + '__' + oof_df['target_name'].astype(str)
+    output_cols = ['sample_id', 'image_path', 'y_true', 'y_pred_oof']
+    oof_df = oof_df[output_cols]
+    save_path = os.path.join(os.getcwd(), 'oof_lasso.csv')
+
 
     # --- 5. テストデータの推論 ---
     print("Running inference on test data...")

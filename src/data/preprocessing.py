@@ -30,27 +30,41 @@ def prepare_train_xy(df: pd.DataFrame, path_to_embed: dict) -> dict:
         }
     """
     # 5つのターゲット用に空箱を用意
-    targets_data = {i: {'X': [], 'y': []} for i in range(5)}
+    targets_data = {i: {'X': [], 'y': [], 'image_path':[]} for i in range(5)}
 
     for _, row in df.iterrows():
-        # ターゲット名の特定
+        # --- ターゲット名の特定 ---
         if 'target_name' in row:
             t_name = row['target_name']
         else:
             # sample_id = "image_name__target_name" の形式から取得
-            t_name = row['sample_id'].split('__')[1]
+            try:
+                t_name = row['sample_id'].split('__')[1]
+            except IndexError:
+                continue
+
+        # --- 画像パスの特定 ---
+        if 'image_path' in row:
+            img_path = row['image_path']
+        else:
+            # sample_id から復元する場合
+            img_path = row['sample_id'].split('__')[0]
         
-        # ターゲット名に対応するインデックス (0~4)
+        # --- データの格納 ---
         if t_name in TARGET_MAPPING:
             t_idx = TARGET_MAPPING[t_name]
             
-            # 特徴量の取得
-            embed = path_to_embed.get(row['image_path'])
+            # 【修正2】row['image_path'] ではなく、上で確保した img_path 変数を使う
+            # (辞書のキーと形式が一致している前提)
+            embed = path_to_embed.get(img_path)
+            
             if embed is None:
-                continue # 万が一画像がない場合はスキップ
+                continue 
 
             targets_data[t_idx]['X'].append(embed)
             targets_data[t_idx]['y'].append(row['target'])
+            # ここで保存
+            targets_data[t_idx]['image_path'].append(img_path)
             
     return targets_data
 
