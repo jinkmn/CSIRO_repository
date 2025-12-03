@@ -129,9 +129,16 @@ def main(cfg: DictConfig):
             continue
 
         X_test = test_path_to_embed[img_path].reshape(1, -1)
-        pred = trained_models[t_idx].predict(X_test)[0]
+        models = trained_models[t_idx] # これがモデルのリスト
+        fold_preds = []
+        for model in models:
+            p = model.predict(X_test)[0]
+            fold_preds.append(p)
+        
+        pred = np.mean(fold_preds) # 平均値を使用
         
         predictions.append(max(0.0, pred))
+        
         sample_ids.append(sample_id)
         
     # 保存
