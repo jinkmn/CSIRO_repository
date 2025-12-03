@@ -31,4 +31,4 @@ class DinoExtractor:
                 # エラー時はゼロ埋めで埋める
                 embeds.append(torch.zeros((1, self.model.config.hidden_size)))
 
-        return torch.cat(embeds).numpy()
+        return np.array(torch.cat(embeds))

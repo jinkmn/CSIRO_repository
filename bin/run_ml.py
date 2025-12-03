@@ -115,7 +115,7 @@ def main(cfg: DictConfig):
 
     submission = pd.DataFrame({'sample_id': sample_ids, 'target': predictions})
     submission.sort_values('sample_id').reset_index(drop=True)
-    submission.to_csv(f'submission_{cfg.exp_name}', index=False)
+    submission.to_csv(f'submission.csv', index=False)
 
 
 if __name__ == "__main__":
