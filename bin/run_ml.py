@@ -84,9 +84,9 @@ def main(cfg: DictConfig):
         oof_df = pd.DataFrame(oof_preds_np, columns=target_columns)
         oof_df['image_path'] = unique_train_images['image_path']
         oof_df.to_csv(f'oof_model_{cfg.exp_name}.csv', index=False)
-        avg_rmse = np.mean([score[0] for score in fold_scores])  
-        avg_r2 = np.mean([score[1] for score in fold_scores]) 
-        print(f"Average RMSE: {avg_rmse:.4f}, Average R2: {avg_r2:.4f}")
+        all_rmse =  fold_scores[0][0]*0.1 + fold_scores[1][0]*0.1 + fold_scores[2][0]*0.1 + fold_scores[3][0]*0.5 + fold_scores[4][0]*0.2
+        all_r2 = fold_scores[0][1]*0.1 + fold_scores[1][1]*0.1 + fold_scores[2][1]*0.1 + fold_scores[3][1]*0.5 + fold_scores[4][1]*0.2
+        print(f"Average RMSE: {all_rmse:.4f}, Average R2: {all_r2:.4f}")
 
 
     print("  Running predictions on test data...")
