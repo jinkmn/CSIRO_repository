@@ -6,6 +6,11 @@ from omegaconf import DictConfig
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import KFold
+import torch
+import gc
+from tqdm import tqdm
+from sklearn.linear_model import Lasso
+from PIL import Image
 
 
 # srcパスの追加
@@ -17,16 +22,21 @@ from src.utils.utils import calc_metrics
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig):
     print(f"=== Experiment: {cfg.exp_name} ===")
-    root = cfg.dir.data_dir
+    ROOT = cfg.dir.data_dir
     
     # --- 1. 特徴抽出器の準備 ---
     extractor = hydra.utils.instantiate(cfg.feature)
     
     # --- 2. 学習データの読み込みと特徴抽出 ---
-    train_df = pd.read_csv(os.path.join(root, "train.csv"))
+    train_df = pd.read_csv(os.path.join(ROOT, "train.csv"))
+    unique_train_images = train_df.drop_duplicates(subset=['image_path']).reset_index()
+
+    targets = [[] for _ in range(5)]
+    target_mapping = {"Dry_Clover_g": 0, "Dry_Dead_g": 1, "Dry_Green_g": 2, "Dry_Total_g": 3, "GDM_g": 4}  
+    train_df['target_name'] = train_df['sample_id'].apply(lambda x: x.split('__')[1])
     
     # ★ ここで preprocessing の関数を使用
-    train_img_paths = get_unique_image_paths(train_df, root)
+    train_img_paths = [os.path.join(ROOT, p) for p in unique_train_images['image_path']]
 
     limit = cfg.dir.data_limit
     if limit is not None:
@@ -34,118 +44,79 @@ def main(cfg: DictConfig):
         train_img_paths = train_img_paths[:limit]
     
     print(f"Extracting features for {len(train_img_paths)} training images...")
-    train_embeds = extractor.extract(train_img_paths)
-    
-    # 辞書化 (画像パス -> 特徴量)
-    # パスはフルパスになっているので、ファイル名または相対パスで辞書化するか、
-    # get_unique_image_pathsの実装に合わせてキーを調整する必要があります。
-    # 今回は get_unique_image_paths がフルパスを返すので、キーも元DFのimage_pathに合わせるため工夫します。
-    # (train_df['image_path'] は相対パス)
-    
-    # 辞書のキーを「相対パス(train_dfに入ってる値)」にする
-    rel_paths = [os.path.relpath(p, root) for p in train_img_paths]
-    # Windows環境などでパス区切り文字がズレないように注意が必要ですが、基本はこれでOK
-    path_to_embed = {p: embed for p, embed in zip(rel_paths, train_embeds)}
-    
-    # --- 3. データの整形 (X, yの作成) ---
-    # ★ ここで preprocessing の関数を使用
-    targets_data = prepare_train_xy(train_df, path_to_embed)
+    embeds_np = extractor.extract(train_img_paths)
 
-    # --- 4. 回帰モデルの学習 ---
-    print("Training Regressors...")
-    trained_models = {i: [] for i in range(5)}
-    
-    # OOF保存用リスト
-    oof_results = []
-    
-    for i in range(5):
-        target_name = TARGET_COLUMNS[i]
-        X = np.array(targets_data[i]['X'])
-        y = np.array(targets_data[i]['y'])
-        img_path = np.array(targets_data[i]['image_path'])
+    for _, row in train_df.iterrows():
+        target_idx = target_mapping[row['target_name']] 
+        targets[target_idx].append(torch.tensor([[row['target']]]))
 
-        oof_preds = np.zeros(len(y))
+    regressors = [[None for _ in range(5)] for _ in range(5)]
+    # Initialize an array to store OOF predictions
+    oof_preds_np = np.zeros((len(embeds_np), 5))
 
-        n_splits = cfg.training.n_splits
-        seed = cfg.training.random_state
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
-
+    print("  Training Lasso regression models...")
+    for i in range(5): # For each target (Dry_Clover_g, Dry_Dead_g, ...)
+        targets_np = np.array(torch.cat(targets[i]))
+        key = [k for k, v in target_mapping.items() if v == i]
+        print(f" Training for target: {key}")
+        
+        # Split using KFold (more robust than random split)
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
         fold_scores = []
     
-        for fold, (train_idxs, val_idxs) in enumerate(kf.split(X)):
-            X_train, y_train = X[train_idxs], y[train_idxs]
-            X_val, y_val = X[val_idxs], y[val_idxs]
-
-            model = hydra.utils.instantiate(cfg.model)
-            if hasattr(model, 'n_splits'): model.n_splits = n_splits
-            if hasattr(model, 'random_state'): model.random_state = seed
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_val).flatten()
-            oof_preds[val_idxs] = y_pred
-            trained_models[i].append(model)
-            rmse, r2 = calc_metrics(y_val, y_pred)
+        for fold, (train_idxs, val_idxs) in enumerate(kf.split(embeds_np)):
+            X_train, y_train = embeds_np[train_idxs], targets_np[train_idxs]
+            X_val, y_val = embeds_np[val_idxs], targets_np[val_idxs]
+            
+            reg = hydra.utils.instantiate(cfg.model)
+            reg.fit(X_train, y_train)
+            
+            # Calculate and save OOF predictions
+            preds = reg.predict(X_val).flatten()
+            oof_preds_np[val_idxs, i] = preds
+            rmse, r2 = calc_metrics(y_val, preds)
             fold_scores.append((rmse, r2))
             print(f"  Fold {fold}: RMSE={rmse:.4f}, R2={r2:.4f}")
-
-        total_rmse, total_r2 = calc_metrics(y, oof_preds)
-        print(f" >> [Overall] Target: {target_name} | RMSE: {total_rmse:.4f} | R2: {total_r2:.4f}")
-        temp_df = pd.DataFrame({
-            'target_idx': i,
-            'target_name': target_name,
-            'image_path': img_path, # 後で分析しやすいように画像パスも保存
-            'y_true': y,
-            'y_pred_oof': oof_preds
-        })
-        oof_results.append(temp_df)
     
-    oof_df = pd.concat(oof_results).reset_index(drop=True)
-    oof_df['sample_id'] = oof_df['image_path'].astype(str) + '__' + oof_df['target_name'].astype(str)
-    output_cols = ['sample_id', 'image_path', 'y_true', 'y_pred_oof']
-    oof_df = oof_df[output_cols]
-    save_path = os.path.join(os.getcwd(), 'oof_lasso.csv')
+            regressors[i][fold] = reg # Also save the model for test prediction
+        
+        target_columns = ['Dry_Clover_g', 'Dry_Dead_g', 'Dry_Green_g', 'Dry_Total_g', 'GDM_g']
+        oof_df = pd.DataFrame(oof_preds_np, columns=target_columns)
+        oof_df['image_path'] = unique_train_images['image_path']
+        oof_df.to_csv(f'oof_model_{cfg.exp_name}.csv', index=False)
+        avg_rmse = np.mean([score[0] for score in fold_scores])  
+        avg_r2 = np.mean([score[1] for score in fold_scores]) 
+        print(f"Average RMSE: {avg_rmse:.4f}, Average R2: {avg_r2:.4f}")
 
 
-    # --- 5. テストデータの推論 ---
-    print("Running inference on test data...")
-    test_df = pd.read_csv(os.path.join(root, "test.csv"))
-    
-    # ★ ここでも preprocessing の関数を利用
-    test_img_paths = get_unique_image_paths(test_df, root)
-    test_embeds = extractor.extract(test_img_paths)
-    
-    rel_test_paths = [os.path.relpath(p, root) for p in test_img_paths]
-    test_path_to_embed = {p: embed for p, embed in zip(rel_test_paths, test_embeds)}
-    
-    predictions = []
-    sample_ids = []
-    
-    for _, row in test_df.iterrows():
-        # ★ ヘルパー関数でパース
-        sample_id, img_path, t_idx = parse_test_row(row)
-        
-        if t_idx is None: 
-            predictions.append(0)
-            sample_ids.append(sample_id)
-            continue
+    print("  Running predictions on test data...")
+    test_df = pd.read_csv(os.path.join(ROOT, "test.csv"))
+    unique_test_images = test_df.drop_duplicates(subset=['image_path']).reset_index()
+    # ★ ここで preprocessing の関数を使用
+    test_img_paths = [os.path.join(ROOT, p) for p in unique_test_images['image_path']]
+    test_embeds_np = extractor.extract(test_img_paths)
+    img_names = []
+    for img_path in tqdm(test_df['image_path'].unique(), desc="Extracting test features"):
+        img_name = os.path.splitext(os.path.basename(img_path))[0]
+        img_names.append(img_name)
+    test_embeds = {img_name: embed for img_name, embed in zip(img_names, test_embeds_np)}
 
-        X_test = test_path_to_embed[img_path].reshape(1, -1)
-        models = trained_models[t_idx] # これがモデルのリスト
-        fold_preds = []
-        for model in models:
-            p = model.predict(X_test)[0]
-            fold_preds.append(p)
-        
-        pred = np.mean(fold_preds) # 平均値を使用
-        
-        predictions.append(max(0.0, pred))
-        
+    predictions, sample_ids = [], []
+
+    for _, entry in test_df.iterrows():
+        sample_id = entry['sample_id']
+        img_name, target_name = sample_id.split('__')
+        X_test = np.array(test_embeds[img_name])
+        target_idx = target_mapping[target_name]
+        fold_preds = [reg.predict(X_test) for reg in regressors[target_idx]]
+        prediction = np.mean(fold_preds)
+        predictions.append(max(0.0, prediction))
         sample_ids.append(sample_id)
-        
-    # 保存
+
     submission = pd.DataFrame({'sample_id': sample_ids, 'target': predictions})
-    save_path = os.path.join(os.getcwd(), "submission.csv")
-    submission.to_csv(save_path, index=False)
-    print(f"Saved submission to {save_path}")
+    submission.sort_values('sample_id').reset_index(drop=True)
+    submission.to_csv(f'submission_{cfg.exp_name}', index=False)
+
 
 if __name__ == "__main__":
     main()
