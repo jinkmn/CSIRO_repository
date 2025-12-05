@@ -14,17 +14,17 @@ def calc_weighted_metrics(y_true, y_pred, target_weights):
     画像の数式に基づき、全要素を一括として重み付きRMSEとR2を計算する
     
     Args:
-        y_true: (N, 5) の正解ラベル
-        y_pred: (N, 5) の予測値
+        y_true: (5, N) の正解ラベル
+        y_pred: (5, N) の予測値
         target_weights: (5,) の各ターゲットに対する重みリスト
     """
+
+
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
     target_weights = np.array(target_weights)
-    w_col = target_weights.reshape(-1, 1)
-    
-    W = np.tile(w_col, (1, y_true.shape[1]))
-    
+    W = np.tile(target_weights[:, np.newaxis], (1, y_true.shape[0]))
+        
     y_true_flat = y_true.ravel()
     y_pred_flat = y_pred.ravel()
     W_flat = W.ravel()

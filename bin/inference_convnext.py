@@ -35,8 +35,6 @@ def main(cfg: DictConfig):
     if not test_csv_path.exists():
         raise FileNotFoundError(f"Test CSV not found: {test_csv_path}")
     
-
-
     test_df = pd.read_csv(test_csv_path)
     
     # ★ デバッグ用: データ件数の制限 (local.yamlで data_limit: 10 としている場合など)
