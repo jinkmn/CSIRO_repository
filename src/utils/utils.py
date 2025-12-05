@@ -23,7 +23,7 @@ def calc_weighted_metrics(y_true, y_pred, target_weights):
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
     target_weights = np.array(target_weights)
-    W = np.tile(target_weights[:, np.newaxis], (1, y_true.shape[0]))
+    W = np.tile(target_weights[:, np.newaxis], (1, y_true.shape[1]))
         
     y_true_flat = y_true.ravel()
     y_pred_flat = y_pred.ravel()
