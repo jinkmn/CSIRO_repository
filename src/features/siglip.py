@@ -60,5 +60,14 @@ class SigLIPExtractor:
 
         if not all_embeds:
             return np.array([])
+        
+        concatenated_tensor = torch.cat(all_embeds, dim=0)
+        
+        # 2. NumPyに変換する
+        embeds_np = concatenated_tensor.numpy()
 
-        return print(np.array(all_embeds).shape), np.array(all_embeds)
+        # 3. 形状を確認（printはreturnと分ける）
+        print(f"Extracted features shape: {embeds_np.shape}")
+
+        # 4. 配列だけを返す
+        return embeds_np
