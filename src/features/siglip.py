@@ -61,4 +61,4 @@ class SigLIPExtractor:
         if not all_embeds:
             return np.array([])
 
-        return np.array(torch.cat(embeds)), print(np.array(torch.cat(embeds)).shape)
+        return np.array(torch.cat(all_embeds,dim=0)), print(np.array(torch.cat(all_embeds,dim=0)).shape)
