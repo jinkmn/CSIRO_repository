@@ -23,7 +23,7 @@ def main(cfg: DictConfig):
         name=cfg.exp_name,       
         config=OmegaConf.to_container(cfg, resolve=True), 
         reinit=True,
-        group=f'{cfg.model}',  
+        group=f'{cfg.model.__target__.split(".")[-1]}',  
         job_type="train",
         mode=cfg.get("wandb_mode", "online")
     )
