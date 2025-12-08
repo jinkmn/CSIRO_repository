@@ -74,4 +74,4 @@ class SigLIPExtractor:
             return np.array([])
 
         # 結合して (N, Dim) のnumpy配列を返す
-        return np.concatenate(all_embeds, axis=0)
+        return np.array(torch.cat(embeds)), print(np.array(torch.cat(embeds)).shape)
