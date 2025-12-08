@@ -29,8 +29,6 @@ class SigLIPExtractor:
 
     def extract(self, image_paths: list) -> np.ndarray:
         all_embeds = []
-        
-        # バッチ処理ループ
         for i in tqdm(range(0, len(image_paths), self.batch_size), desc="SigLIP Extraction"):
             batch_paths = image_paths[i : i + self.batch_size]
             batch_images = []
@@ -73,5 +71,4 @@ class SigLIPExtractor:
         if not all_embeds:
             return np.array([])
 
-        # 結合して (N, Dim) のnumpy配列を返す
         return np.array(torch.cat(embeds)), print(np.array(torch.cat(embeds)).shape)
