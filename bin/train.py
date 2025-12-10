@@ -28,6 +28,7 @@ from src.utils.utils import *
 def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None, model_ema=None, accumulation_steps=1):
     model.train()
     running_loss = 0.0
+    optimizer.zero_grad()
     
     pbar = tqdm(loader, desc="Train", dynamic_ncols=True)
     # labels は (Batch, 3) を想定
@@ -40,7 +41,6 @@ def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None,
             images_in = images.to(device)
             
         labels = labels.to(device).float() # (Batch, 3)
-        optimizer.zero_grad()
         
         if isinstance(images_in, tuple):
             outputs = model(images_in[0], images_in[1])
@@ -49,6 +49,8 @@ def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None,
             
         loss = criterion(outputs, labels)
         loss = loss / accumulation_steps
+
+        loss.backward()
         
         if (i + 1) % accumulation_steps == 0:
             optimizer.step()
@@ -56,7 +58,6 @@ def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None,
             
             if model_ema is not None:
                 model_ema.update(model)
-                
 
         running_loss += (loss.item() * accumulation_steps) * labels.size(0)
         pbar.set_postfix({'loss': loss.item() * accumulation_steps})
