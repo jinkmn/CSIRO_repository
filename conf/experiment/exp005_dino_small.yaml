@@ -7,6 +7,6 @@ defaults:
   - override /training: default
   - override /transform: base_transform
 
-exp_name: "test"
+exp_name: "exp005_dino_small"
 wandb_mode: "online"
 seed: 42
