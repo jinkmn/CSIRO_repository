@@ -1,0 +1,5 @@
+_target_: src.models.biomass.BiomassModel
+model_name: "vit_small_patch14_reg4_dinov2.lvd142m"
+pretrained: true
+drop_rate: 0.3
+out_dim: 3

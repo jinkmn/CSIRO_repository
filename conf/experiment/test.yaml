@@ -3,7 +3,7 @@
 defaults:
   - override /dir: kaggle
   - override /dataset: deual
-  - override /model: dino_base
+  - override /model: dino_small
   - override /training: test_run
   - override /transform: base_transform
 
