@@ -109,7 +109,6 @@ class BiomassModel(nn.Module):
             model_name,
             pretrained=pretrained,
             num_classes=0,
-            global_pool='avg'
         )
 
         # 特徴量の次元数
