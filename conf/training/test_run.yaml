@@ -3,7 +3,7 @@ img_size: 518
 
 # ハイパーパラメータ
 epochs: 10
-batch_size: 32
+batch_size: 16
 num_workers: 2 # Kaggleは2推奨 (増やしすぎるとエラーになることがある)
 
 lr: 1.0e-4 # 基本学習率 (AdamW)
