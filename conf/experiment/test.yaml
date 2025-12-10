@@ -1,10 +1,11 @@
+# @package _global_
+
 defaults:
-  - _self_
-  - dir: kaggle
-  - dataset: deual
-  - model: dino_base
-  - training: test_run
-  - transform: base_transform
+  - override /dir: kaggle
+  - override /dataset: deual
+  - override /model: dino_base
+  - override /training: test_run
+  - override /transform: base_transform # ← ★ここが重要！
 
 exp_name: "test"
 wandb_mode: "online"

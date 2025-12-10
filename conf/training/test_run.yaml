@@ -1,4 +1,3 @@
-# Loss関数内の順序と一致させること: [Total, GDM, Green]
 # 画像サイズ (Transformで使用)
 img_size: 224
 
