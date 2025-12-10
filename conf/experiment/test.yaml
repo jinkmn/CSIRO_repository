@@ -4,7 +4,6 @@ defaults:
   - dataset: deual
   - model: dino_base
   - training: test_run
-
   - transform: base_transform
 
 exp_name: "test"

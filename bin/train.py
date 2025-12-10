@@ -148,8 +148,7 @@ def main(cfg: DictConfig):
     val_transform = tf_factory.get_valid_transforms()
     
     for fold in range(5):
-        print(f"\n{'='*10} Fold {fold} {'='*10}")
-        
+        print(f"\n{'='*10} Fold {fold} {' ='*10}")
         train_fold = train_df[train_df['fold'] != fold].reset_index(drop=True)
         val_fold = train_df[train_df['fold'] == fold].reset_index(drop=True)
         

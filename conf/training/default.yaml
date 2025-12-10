@@ -1,4 +1,3 @@
-# 学習ターゲット (モデルが予測する3つの変数)
 # Loss関数内の順序と一致させること: [Total, GDM, Green]
 train_targets:
   - "Dry_Total_g"
