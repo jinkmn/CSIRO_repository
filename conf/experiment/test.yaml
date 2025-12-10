@@ -5,7 +5,7 @@ defaults:
   - override /dataset: deual
   - override /model: dino_base
   - override /training: test_run
-  - override /transform: base_transform # ← ★ここが重要！
+  - override /transform: base_transform
 
 exp_name: "test"
 wandb_mode: "online"

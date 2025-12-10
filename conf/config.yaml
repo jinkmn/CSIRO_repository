@@ -6,9 +6,9 @@ defaults:
   - model: convnext
   - inference: convnext # 今回追加したもの
   - training: null # 推論だけなら不要
-  - experiment: null
   - transform: null
   - override hydra/job_logging: disabled
+  - experiment: null
 
 normalization: "standard"
 wandb_mode: "online"

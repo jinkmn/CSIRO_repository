@@ -1,18 +1,12 @@
+# @package _global_
+
 defaults:
-  - _self_
-  - dir: kaggle
-  - dataset: default
-  - model: base
-  - training: default
+  - override /dir: kaggle
+  - override /dataset: deual
+  - override /model: dino_base
+  - override /training: default
+  - override /transform: base_transform
 
-  - transform/train: train
-  - transform/valid: valid
-
-# 実験名 (実行時に experiment=... で上書き可能)
-exp_name: "exp005_dino_base"
-
-# WandBモード (online, offline, disabled)
+exp_name: "test"
 wandb_mode: "online"
-
-# シード値
 seed: 42
