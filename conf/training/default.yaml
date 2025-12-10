@@ -3,9 +3,9 @@ img_size: 518
 
 # ハイパーパラメータ
 epochs: 100
-batch_size: 16
+batch_size: 8
 num_workers: 2
-accumulation_steps: 2
+accumulation_steps: 4
 lr: 1.0e-3 # 基本学習率 (AdamW)
 min_lr: 1.0e-6 # CosineAnnealingの最小学習率
 weight_decay: 1.0e-2
