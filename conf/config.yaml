@@ -7,8 +7,8 @@ defaults:
   - inference: convnext # 今回追加したもの
   - training: null # 推論だけなら不要
   - transform: null
-  - override hydra/job_logging: disabled
   - experiment: null
+  - override hydra/job_logging: disabled
 
 normalization: "standard"
 wandb_mode: "online"
