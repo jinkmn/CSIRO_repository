@@ -93,7 +93,8 @@ class BiomassModel(nn.Module):
         model_name: str, 
         pretrained: bool = True, 
         out_dim: int = 3,  
-        drop_rate: float = 0.3
+        drop_rate: float = 0.3,
+        freeze: bool = True
     ):
         """
         Args:
@@ -110,6 +111,9 @@ class BiomassModel(nn.Module):
             pretrained=pretrained,
             num_classes=0,
         )
+
+        for param in self.backbone.parameters():
+            param.requires_grad = not freeze
 
         # 特徴量の次元数
         self.n_features = self.backbone.num_features
