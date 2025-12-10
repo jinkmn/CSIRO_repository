@@ -1,3 +1,0 @@
-_target_: src.data.transforms.TrainTransform
-img_size: ${training.img_size} # training設定を参照
-aug_prob: 0.5 # Augmentationの適用確率

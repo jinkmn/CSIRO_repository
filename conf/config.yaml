@@ -1,14 +1,13 @@
 defaults:
   - _self_
   - dir: local
-  - dataset:
+  - dataset: null
   - feature: null
   - model: convnext
   - inference: convnext # 今回追加したもの
   - training: null # 推論だけなら不要
   - experiment: null
-  - transform/train: train
-  - transform/valid: valid
+  - transform: null
   - override hydra/job_logging: disabled
 
 normalization: "standard"
