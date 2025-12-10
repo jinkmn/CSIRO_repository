@@ -138,7 +138,7 @@ def main(cfg: DictConfig):
         train_df = train_df[train_df['image_path'].isin(unique_paths)].reset_index(drop=True)
 
     # 2. ターゲットの設定
-    train_targets_cols = ['Dry_Total_g','GDM_g','Dry_Green_g']   
+    train_targets_cols = ['Dry_Clover_g', 'Dry_Dead_g', 'Dry_Green_g', 'Dry_Total_g', 'GDM_g' ]   
     all_target_columns = ['Dry_Clover_g', 'Dry_Dead_g', 'Dry_Green_g', 'Dry_Total_g', 'GDM_g' ]   
     print(f"Targets to train (Multi-task): {train_targets_cols}")
     
@@ -275,16 +275,10 @@ def main(cfg: DictConfig):
     print("\nCalculating derived targets and overall metrics...")
     
     oof_df = train_df.copy()
-    all_target_columns = ['Dry_Clover_g', 'Dry_Dead_g', 'Dry_Green_g', 'Dry_Total_g', 'GDM_g']
     
     # 学習した予測値を代入
     for col in train_targets_cols:
         oof_df[f"pred_{col}"] = oof_preds_dict[col].clip(min=0)
-    
-    # ダミー実装: 学習していないカラムは0埋め
-    for col in all_target_columns:
-        if f"pred_{col}" not in oof_df.columns:
-             oof_df[f"pred_{col}"] = 0.0
 
     # Metric計算
     y_true = train_df[all_target_columns].values

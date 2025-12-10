@@ -88,25 +88,8 @@ class BiomassWeightedMSELoss(nn.Module):
         preds:   Modelの出力 (Batch, 3) -> [Clover, Dead, Green] と仮定
         targets: 正解ラベル (Batch, 5) -> [Clover, Dead, Green, Total, GDM]
         """
-        # 1. モデルの出力 (3つ) を取り出す
-        pred_total = preds[:, 0]
-        pred_gdm   = preds[:, 1]
-        pred_green  = preds[:, 2]
         
-        pred_clover = torch.clamp(pred_gdm - pred_green, min=0)
-        pred_dead   = torch.clamp(pred_total - pred_gdm, min=0)       
-        
-        # 3. 5つの予測値を結合 (Batch, 5)
-        # 結合するために shape を (Batch, 1) に揃える
-        preds_full = torch.stack([
-            pred_clover, 
-            pred_dead, 
-            pred_green, 
-            pred_total, 
-            pred_gdm
-        ], dim=1)
-        
-        loss = self.mse(preds_full, targets) 
+        loss = self.mse(preds, targets) 
         weighted_loss = torch.sum(loss * self.weights)
         
         return weighted_loss

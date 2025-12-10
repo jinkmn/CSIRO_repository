@@ -125,6 +125,8 @@ class BiomassModel(nn.Module):
         self.head_total = self._create_head_simple(self.n_combined, 1, drop_rate)
         self.head_gdm   = self._create_head_simple(self.n_combined, 1, drop_rate)
         self.head_green = self._create_head_simple(self.n_combined, 1, drop_rate)
+        self.head_dead = self._create_head_simple(self.n_combined, 1, drop_rate)
+        self.head_clover = self._create_head_simple(self.n_combined, 1, drop_rate)
 
     def _create_head(self, in_dim, out_dim, drop_rate) -> nn.Sequential:
         """
@@ -163,9 +165,11 @@ class BiomassModel(nn.Module):
         out_total = self.head_total(combined)
         out_gdm   = self.head_gdm(combined)
         out_green = self.head_green(combined)
+        out_dead = self.head_dead(combined)
+        out_clover = self.head_clover(combined)
 
         # 4. 結合して返す [B, 3]
-        return torch.cat([out_total, out_gdm, out_green], dim=1)
+        return torch.cat([out_clover, out_dead, out_green, out_total, out_gdm], dim=1)
 
     def load_weights(self, weight_path: str, device: str):
         """
