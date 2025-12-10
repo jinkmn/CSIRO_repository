@@ -1,9 +1,3 @@
-# Loss関数内の順序と一致させること: [Total, GDM, Green]
-train_targets:
-  - "Dry_Total_g"
-  - "GDM_g"
-  - "Dry_Green_g"
-
 # 画像サイズ (Transformで使用)
 img_size: 224
 
@@ -15,4 +9,4 @@ num_workers: 2 # Kaggleは2推奨 (増やしすぎるとエラーになること
 lr: 1.0e-4 # 基本学習率 (AdamW)
 min_lr: 1.0e-6 # CosineAnnealingの最小学習率
 weight_decay: 1.0e-2
-warmup_epochs: 1
+warmup_epochs: 2

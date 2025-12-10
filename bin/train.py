@@ -175,7 +175,8 @@ def main(cfg: DictConfig):
             batch_size=cfg.training.batch_size, 
             shuffle=True, 
             num_workers=cfg.training.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )
         val_loader = DataLoader(
             val_dataset, 
