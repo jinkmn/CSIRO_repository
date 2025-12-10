@@ -1,0 +1,2 @@
+_target_: src.data.transforms.BiomassTransformFactory
+img_size: ${training.img_size}
