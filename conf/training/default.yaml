@@ -1,12 +1,12 @@
 # 画像サイズ (Transformで使用)
-img_size: 224
+img_size: 518
 
 # ハイパーパラメータ
-epochs: 10
-batch_size: 32
-num_workers: 2 # Kaggleは2推奨 (増やしすぎるとエラーになることがある)
-
-lr: 1.0e-4 # 基本学習率 (AdamW)
+epochs: 100
+batch_size: 16
+num_workers: 2
+accumulation_steps: 2
+lr: 1.0e-3 # 基本学習率 (AdamW)
 min_lr: 1.0e-6 # CosineAnnealingの最小学習率
 weight_decay: 1.0e-2
-warmup_epochs: 2
+warmup_epochs: 5

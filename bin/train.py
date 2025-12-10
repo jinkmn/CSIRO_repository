@@ -25,13 +25,13 @@ from src.utils.utils import *
 # Helper Functions (Modified for Multi-Task)
 # ==============================================================================
 
-def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None, model_ema=None):
+def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None, model_ema=None, accumulation_steps=1):
     model.train()
     running_loss = 0.0
     
     pbar = tqdm(loader, desc="Train", dynamic_ncols=True)
     # labels は (Batch, 3) を想定
-    for images, labels in pbar:
+    for i, (images, labels) in enumerate(pbar):
         if isinstance(images, (list, tuple)):
             img_left = images[0].to(device)
             img_right = images[1].to(device)
@@ -48,18 +48,24 @@ def train_one_epoch(model, loader, optimizer, criterion, device, scheduler=None,
             outputs = model(images_in)
             
         loss = criterion(outputs, labels)
+        loss = loss / accumulation_steps
         
-        loss.backward()
-        optimizer.step()
+        if (i + 1) % accumulation_steps == 0:
+            optimizer.step()
+            optimizer.zero_grad() 
+            
+            if model_ema is not None:
+                model_ema.update(model)
+                
 
+        running_loss += (loss.item() * accumulation_steps) * labels.size(0)
+        pbar.set_postfix({'loss': loss.item() * accumulation_steps})
+        
+    if (i + 1) % accumulation_steps != 0:
+        optimizer.step()
+        optimizer.zero_grad()
         if model_ema is not None:
             model_ema.update(model)
-        
-        if scheduler is not None:
-            scheduler.step()
-            
-        running_loss += loss.item() * labels.size(0)
-        pbar.set_postfix({'loss': loss.item()})
         
     epoch_loss = running_loss / len(loader.dataset)
     return epoch_loss
@@ -178,7 +184,7 @@ def main(cfg: DictConfig):
             pin_memory=True,
             drop_last=True
         )
-        
+
         val_loader = DataLoader(
             val_dataset, 
             batch_size=cfg.training.batch_size, 
@@ -221,7 +227,7 @@ def main(cfg: DictConfig):
         best_preds = None # (N_val, 3)
         
         for epoch in range(cfg.training.epochs):
-            train_loss = train_one_epoch(model, train_loader, optimizer, criterion, device, model_ema=model_ema)
+            train_loss = train_one_epoch(model, train_loader, optimizer, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
             if scheduler is not None:
                 scheduler.step()
             val_loss, val_preds, val_trues = validate(model_ema.module, val_loader, criterion, device)
