@@ -122,9 +122,9 @@ class BiomassModel(nn.Module):
 
         # 2. 予測ヘッド (改良版)
         # 3つのターゲットに対し、それぞれ専用の層を用意
-        self.head_total = self._create_head(self.n_combined, 1, drop_rate)
-        self.head_gdm   = self._create_head(self.n_combined, 1, drop_rate)
-        self.head_green = self._create_head(self.n_combined, 1, drop_rate)
+        self.head_total = self._create_head_simple(self.n_combined, 1, drop_rate)
+        self.head_gdm   = self._create_head_simple(self.n_combined, 1, drop_rate)
+        self.head_green = self._create_head_simple(self.n_combined, 1, drop_rate)
 
     def _create_head(self, in_dim, out_dim, drop_rate) -> nn.Sequential:
         """
@@ -139,6 +139,12 @@ class BiomassModel(nn.Module):
             nn.GELU(),                      # ReLUより現代的な活性化関数
             nn.Dropout(drop_rate),
             nn.Linear(hidden_dim, out_dim)
+        )
+    
+    def _create_head_simple(self, in_dim, out_dim, drop_rate) -> nn.Sequential:
+        return nn.Sequential(
+            nn.Dropout(p=drop_rate), 
+            nn.Linear(in_dim, out_dim)
         )
 
     def forward(self, img_left: torch.Tensor, img_right: torch.Tensor):
