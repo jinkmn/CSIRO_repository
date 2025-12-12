@@ -91,5 +91,4 @@ class BiomassWeightedMSELoss(nn.Module):
         
         loss = self.mse(preds, targets) 
         weighted_loss = torch.sum(loss * self.weights)
-        
         return weighted_loss
