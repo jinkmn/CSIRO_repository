@@ -25,7 +25,7 @@ class LassoWrapper(BaseModelWrapper):
         self.random_state = random_state
         self.model = None
 
-    def fit_predict(self, X_train, y_train, X_val):
+    def fit_predict(self, X_train, y_train, X_val, y_val):
         """
         学習を行い、Validationデータに対する予測値と学習済みモデルを返す
         """
