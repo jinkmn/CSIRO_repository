@@ -154,8 +154,8 @@ def main(cfg: DictConfig):
             for reg in regressors[target_idx]:
                 pred = reg.predict(X_test)
                 fold_preds.append(pred[0])
-                prediction = np.mean(fold_preds)
-                predictions.append(max(0.0, prediction)) 
+            prediction = np.mean(fold_preds)
+            predictions.append(max(0.0, prediction)) 
 
         else:
             predictions.append(0.0)
@@ -163,7 +163,7 @@ def main(cfg: DictConfig):
         sample_ids.append(sample_id)
 
     submission = pd.DataFrame({'sample_id': sample_ids, 'target': predictions})
-    submission = submission.sort_values('sample_id').reset_index(drop=True)
+    submission = submission.reset_index(drop=True)
     submission.to_csv(f'submission.csv', index=False)
     print("Submission file 'submission.csv' created.")
     

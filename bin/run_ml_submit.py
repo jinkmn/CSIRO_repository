@@ -140,8 +140,8 @@ def main(cfg: DictConfig):
             for reg in regressors[target_idx]:
                 pred = reg.predict(X_test)
                 fold_preds.append(pred[0])
-                prediction = np.mean(fold_preds)
-                predictions.append(max(0.0, prediction)) 
+            prediction = np.mean(fold_preds)
+            predictions.append(max(0.0, prediction)) 
 
         else:
             predictions.append(0.0)
