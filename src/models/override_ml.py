@@ -56,7 +56,6 @@ class RidgeWrapper(BaseModelWrapper):
         self.model = None
 
     def fit_predict(self, X_train, y_train, X_val, y_val):
-        # Ridgeにもrandom_stateを渡す (solver='sag'などの場合に影響するため推奨)
         base_model = Ridge(alpha=self.alpha, random_state=self.random_state)
         
         if self.normalization == "standard":

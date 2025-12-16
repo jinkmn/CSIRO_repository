@@ -1,11 +1,8 @@
-# @package _global_
-
-# 1. 使うコンポーネントを強制的に指定 (override)
 defaults:
-  - override /feature: siglip
+  - override /feature: dino
   - override /model: cat_boost
   - override /training: null
   - override /inference: null
 
 # 3. 保存フォルダ名 (ファイル名と同じにするのが通例)
-exp_name: "exp008_siglip+cat"
+exp_name: "exp0010_dino_cat"
