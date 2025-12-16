@@ -1,0 +1,5 @@
+_target_: src.models.override_ml.RidgeWrapper
+
+alpha: 1.0
+random_state: 42
+normalization: "standard"

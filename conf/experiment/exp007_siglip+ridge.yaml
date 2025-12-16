@@ -1,0 +1,12 @@
+# @package _global_
+
+# 1. 使うコンポーネントを強制的に指定 (override)
+defaults:
+  - override /feature: siglip
+  - override /model: ridge
+  - override /training: null
+  - override /inference: null
+
+normalization: "standard"
+# 3. 保存フォルダ名 (ファイル名と同じにするのが通例)
+exp_name: "exp007_siglip_ridge"

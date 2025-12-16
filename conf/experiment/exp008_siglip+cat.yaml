@@ -1,0 +1,11 @@
+# @package _global_
+
+# 1. 使うコンポーネントを強制的に指定 (override)
+defaults:
+  - override /feature: dino_giant
+  - override /model: lasso
+  - override /training: null
+  - override /inference: null
+
+# 3. 保存フォルダ名 (ファイル名と同じにするのが通例)
+exp_name: "exp008_siglip+cat"
