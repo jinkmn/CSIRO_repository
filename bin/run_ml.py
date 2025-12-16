@@ -30,6 +30,9 @@ def main(cfg: DictConfig):
 
     print(f"=== Experiment: {cfg.exp_name} ===")
     ROOT = cfg.dir.data_dir
+
+    output_dir = os.path.join(os.getcwd(), cfg.exp_name)
+    os.makedirs(output_dir, exist_ok=True)
     
     extractor = hydra.utils.instantiate(cfg.feature)
     
@@ -121,7 +124,8 @@ def main(cfg: DictConfig):
     for i, col in enumerate(target_columns):
         oof_df[f"pred_{col}"] = oof_preds_np[:, i]
         
-    oof_df.to_csv(f'oof_model_{cfg.exp_name}.csv', index=False)
+    oof_save_path = os.path.join(output_dir, f'oof_model_{cfg.exp_name}.csv')
+    oof_df.to_csv(oof_save_path, index=False)
 
     # --- Test Prediction ---
     print("  Running predictions on test data...")
@@ -164,7 +168,8 @@ def main(cfg: DictConfig):
 
     submission = pd.DataFrame({'sample_id': sample_ids, 'target': predictions})
     submission = submission.reset_index(drop=True)
-    submission.to_csv(f'submission.csv', index=False)
+    sub_save_path = os.path.join(output_dir, 'submission.csv')
+    submission.to_csv(sub_save_path, index=False)
     print("Submission file 'submission.csv' created.")
     
     wandb.finish()
