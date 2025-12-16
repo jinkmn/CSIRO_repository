@@ -80,7 +80,6 @@ def main(cfg: DictConfig):
     # ------------------------------------------------------------------
     # 2. TTA (Test-Time Augmentation) 推論ループ
     # ------------------------------------------------------------------
-    # Transform生成工場
     tf_factory = TransformFactory(img_size=cfg.inference.img_size)
     tta_transforms = tf_factory.get_tta_transforms() # [Original, HFlip, VFlip]
     
