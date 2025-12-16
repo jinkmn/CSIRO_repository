@@ -2,7 +2,7 @@
 
 # 1. 使うコンポーネントを強制的に指定 (override)
 defaults:
-  - override /feature: dino
+  - override /feature: dino_giant
   - override /model: GBR
   - override /training: null
   - override /inference: null
