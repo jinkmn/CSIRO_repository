@@ -5,5 +5,4 @@ defaults:
   - override /inference: null
 
 normalization: null
-# 3. 保存フォルダ名 (ファイル名と同じにするのが通例)
 exp_name: "exp013_siglip_lightgbm"
