@@ -105,3 +105,4 @@ def additional_transform(image):
         left = random.randint(0, bg_w - w)
         background_image[top:top + h, left:left + w] = image
         image = background_image
+    return image
