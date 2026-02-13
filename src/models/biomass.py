@@ -200,7 +200,6 @@ class BiomassModel2(nn.Module):
         self, 
         model_name: str, 
         pretrained: bool = True, 
-        out_dim: int = 3,  
         drop_rate: float = 0.3,
         freeze: bool = True,
         img_size: int = 512
@@ -221,36 +220,41 @@ class BiomassModel2(nn.Module):
             num_classes=0,
             img_size=img_size
         )
-
+        
         for param in self.backbone.parameters():
             param.requires_grad = not freeze
 
         # 特徴量の次元数
-        self.n_features = self.backbone.num_features
+        self.embed_dim = self.backbone.num_features
         # 左右結合後の次元数
-        self.n_combined = self.n_features * 2
+
+        self.fusion_attn = nn.MultiheadAttention(
+            embed_dim=self.embed_dim, 
+            num_heads=6, 
+            batch_first=True
+        )
 
         # 2. 予測ヘッド (改良版)
         # 3つのターゲットに対し、それぞれ専用の層を用意
-        self.head_total = self._create_head_simple(self.n_combined, 1, drop_rate)
-        self.head_gdm   = self._create_head_simple(self.n_combined, 1, drop_rate)
-        self.head_green = self._create_head_simple(self.n_combined, 1, drop_rate)
-        self.head_dead = self._create_head_simple(self.n_combined, 1, drop_rate)
-        self.head_clover = self._create_head_simple(self.n_combined, 1, drop_rate)
+        self.head_total = self._create_head(self.embed_dim, drop_rate)
+        self.head_gdm   = self._create_head(self.embed_dim, drop_rate)
+        self.head_green = self._create_head(self.embed_dim, drop_rate)
+        self.head_dead = self._create_head(self.embed_dim, drop_rate)
+        self.head_clover = self._create_head(self.embed_dim, drop_rate)
 
-    def _create_head(self, in_dim, out_dim, drop_rate) -> nn.Sequential:
+    def _create_head(self, in_dim, drop_rate) -> nn.Sequential:
         """
         MLPヘッドの作成
         Linear -> BN -> GELU -> Dropout -> Linear
         """
-        hidden_dim = 512 # 隠れ層のサイズ (経験的に512程度がバランス良し)
+        hidden_dim = 128 
         
         return nn.Sequential(
             nn.Linear(in_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),     # 学習安定化のため追加
             nn.GELU(),                      # ReLUより現代的な活性化関数
             nn.Dropout(drop_rate),
-            nn.Linear(hidden_dim, out_dim)
+            nn.Linear(hidden_dim, 1)
         )
     
     def _create_head_simple(self, in_dim, out_dim, drop_rate) -> nn.Sequential:
@@ -265,18 +269,135 @@ class BiomassModel2(nn.Module):
         Return: (Batch, 3) のTensor
         """
         # 1. Backbone (重み共有)
-        feat_left = self.backbone(img_left)
-        feat_right = self.backbone(img_right)
+        feat_left = self.backbone.forward_features(img_left)
+        feat_right = self.backbone.forward_features(img_right)
         
-        # 2. 特徴量結合 [B, F] x 2 -> [B, 2F]
-        combined = torch.cat([feat_left, feat_right], dim=1)
+        combined_feat = torch.cat([feat_left, feat_right], dim=1)
+
+        attn_output, _ = self.fusion_attn(combined_feat, combined_feat, combined_feat)
+
+        global_feat = attn_output.mean(dim=1)
 
         # 3. 各ヘッドで予測 [B, 1]
-        out_total = self.head_total(combined)
-        out_gdm   = self.head_gdm(combined)
-        out_green = self.head_green(combined)
-        out_dead = self.head_dead(combined)
-        out_clover = self.head_clover(combined)
+        out_total = self.head_total(global_feat)
+        out_gdm   = self.head_gdm(global_feat)
+        out_green = self.head_green(global_feat)
+        out_dead = self.head_dead(global_feat)
+        out_clover = self.head_clover(global_feat)
+
+        # 4. 結合して返す [B, 3]
+        return torch.cat([out_clover, out_dead, out_green, out_total, out_gdm], dim=1)
+
+    def load_weights(self, weight_path: str, device: str):
+        """
+        推論用: 重みロードヘルパー
+        """
+        if not weight_path:
+            return
+            
+        state_dict = torch.load(weight_path, map_location=device)
+        
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            name = k.replace('module.', '')
+            new_state_dict[name] = v
+            
+        self.load_state_dict(new_state_dict)
+        print(f"Weights loaded from: {weight_path}")
+
+
+class BiomassModel3(nn.Module):
+    """
+    左右の画像を入力とし、3つの目的変数を予測するDual-Streamモデル
+    """
+    def __init__(
+        self, 
+        model_name: str, 
+        pretrained: bool = True, 
+        drop_rate: float = 0.3,
+        freeze: bool = True,
+        img_size: int = 512
+    ):
+        """
+        Args:
+            model_name: timmのモデル名
+            pretrained: ImageNet重みを使うか
+            out_dim: 出力次元数 (train.pyとの互換性用、内部では3つ固定で実装)
+            drop_rate: ドロップアウト率
+        """
+        super().__init__()
+
+        # 1. バックボーン
+        self.backbone = timm.create_model(
+            model_name,
+            pretrained=pretrained,
+            num_classes=0,
+            img_size=img_size
+        )
+        
+        for param in self.backbone.parameters():
+            param.requires_grad = not freeze
+
+        # 特徴量の次元数
+        self.embed_dim = self.backbone.num_features
+        # 左右結合後の次元数
+
+        self.fusion_attn = nn.MultiheadAttention(
+            embed_dim=self.embed_dim, 
+            num_heads=6, 
+            batch_first=True
+        )
+
+        # 2. 予測ヘッド (改良版)
+        # 3つのターゲットに対し、それぞれ専用の層を用意
+        self.head_total = self._create_head(self.embed_dim, drop_rate)
+        self.head_gdm   = self._create_head(self.embed_dim, drop_rate)
+        self.head_green = self._create_head(self.embed_dim, drop_rate)
+        self.head_dead = self._create_head(self.embed_dim, drop_rate)
+        self.head_clover = self._create_head(self.embed_dim, drop_rate)
+
+    def _create_head(self, in_dim, drop_rate) -> nn.Sequential:
+        """
+        MLPヘッドの作成
+        Linear -> BN -> GELU -> Dropout -> Linear
+        """
+        hidden_dim = 128 
+        
+        return nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),     # 学習安定化のため追加
+            nn.GELU(),                      # ReLUより現代的な活性化関数
+            nn.Dropout(drop_rate),
+            nn.Linear(hidden_dim, 1)
+        )
+    
+    def _create_head_simple(self, in_dim, out_dim, drop_rate) -> nn.Sequential:
+        return nn.Sequential(
+            nn.Dropout(p=drop_rate), 
+            nn.Linear(in_dim, out_dim)
+        )
+
+    def forward(self, img_left: torch.Tensor, img_right: torch.Tensor):
+        """
+        順伝播処理
+        Return: (Batch, 3) のTensor
+        """
+        # 1. Backbone (重み共有)
+        feat_left = self.backbone.forward_features(img_left)
+        feat_right = self.backbone.forward_features(img_right)
+        
+        combined_feat = torch.cat([feat_left, feat_right], dim=1)
+
+        attn_output, _ = self.fusion_attn(combined_feat, combined_feat, combined_feat)
+
+        global_feat = attn_output.mean(dim=1)
+
+        # 3. 各ヘッドで予測 [B, 1]
+        out_total = self.head_total(global_feat)
+        out_gdm   = self.head_gdm(global_feat)
+        out_green = self.head_green(global_feat)
+        out_dead = self.head_dead(global_feat)
+        out_clover = self.head_clover(global_feat)
 
         # 4. 結合して返す [B, 3]
         return torch.cat([out_clover, out_dead, out_green, out_total, out_gdm], dim=1)

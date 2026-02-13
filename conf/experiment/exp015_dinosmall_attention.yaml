@@ -2,10 +2,10 @@
 defaults:
   - override /dir: kaggle
   - override /dataset: deual
-  - override /model: dino_small
+  - override /model: dino_attention
   - override /training: default
-  - override /transform: transform_7
+  - override /transform: transform
 
-exp_name: "exp006_dino_small_7transform"
+exp_name: "exp015_dino_small_attention"
 wandb_mode: "online"
 seed: 42
