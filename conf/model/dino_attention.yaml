@@ -2,6 +2,5 @@ _target_: src.models.biomass.BiomassModel2
 model_name: "vit_small_patch14_reg4_dinov2.lvd142m"
 pretrained: true
 drop_rate: 0.5
-out_dim: 3
 freeze: True
 img_size: ${training.img_size}
