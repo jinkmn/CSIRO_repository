@@ -93,7 +93,6 @@ class BiomassModel(nn.Module):
         self, 
         model_name: str, 
         pretrained: bool = True, 
-        out_dim: int = 3,  
         drop_rate: float = 0.3,
         freeze: bool = True,
         img_size: int = 512

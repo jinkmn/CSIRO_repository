@@ -195,7 +195,7 @@ def main(cfg: DictConfig):
         )
         
 
-        model = hydra.utils.instantiate(cfg.model, out_dim=num_targets)
+        model = hydra.utils.instantiate(cfg.model)
         model.to(device)
 
         model_ema = ModelEmaV2(model, decay=0.999, device=device)
