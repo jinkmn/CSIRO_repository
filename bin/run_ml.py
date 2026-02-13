@@ -9,7 +9,7 @@ import gc
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler, Normalizer
 from PIL import Image
-import wandb 
+import wandb
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 

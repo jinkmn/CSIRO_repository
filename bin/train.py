@@ -129,7 +129,7 @@ def main(cfg: DictConfig):
 
     # 1. データ読み込みと前処理
     raw_train_df = pd.read_csv(os.path.join(ROOT, "train.csv"))
-    train_df = preprocess_train_data(raw_train_df, n_splits=5)
+    train_df = preprocess_train_data(raw_train_df, n_splits=3)
     
     limit = cfg.dir.data_limit
     if limit is not None:
@@ -142,7 +142,7 @@ def main(cfg: DictConfig):
     all_target_columns = ['Dry_Clover_g', 'Dry_Dead_g', 'Dry_Green_g', 'Dry_Total_g', 'GDM_g' ]   
     print(f"Targets to train (Multi-task): {train_targets_cols}")
     
-    num_targets = len(train_targets_cols) # 3
+    num_targets = len(train_targets_cols) 
     
     oof_preds_dict = {col: np.zeros(len(train_df)) for col in train_targets_cols}
     
@@ -154,7 +154,7 @@ def main(cfg: DictConfig):
     train_transform = tf_factory.get_train_transforms()
     val_transform = tf_factory.get_valid_transforms()
     
-    for fold in range(5):
+    for fold in range(3):
         print(f"\n{'='*10} Fold {fold} {' ='*10}")
         train_fold = train_df[train_df['fold'] != fold].reset_index(drop=True)
         val_fold = train_df[train_df['fold'] == fold].reset_index(drop=True)

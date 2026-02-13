@@ -3,6 +3,7 @@ import random
 import os
 import torch
 import torch.nn as nn
+import cv2
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import StratifiedGroupKFold
 
@@ -39,7 +40,7 @@ def calc_weighted_metrics(y_true, y_pred, target_weights):
     
     return rmse, r2
 
-def preprocess_train_data(train_df, n_splits=5):
+def preprocess_train_data(train_df, n_splits=3):
     """
     1. 画像ごとに1行になるようにピボット（データの整列問題を解決）
     2. Group(Sampling_Date) かつ Stratified(State) でFoldを作成
@@ -92,3 +93,15 @@ class BiomassWeightedMSELoss(nn.Module):
         loss = self.mse(preds, targets) 
         weighted_loss = torch.sum(loss * self.weights)
         return weighted_loss
+
+def additional_transform(image):
+    if random.random() < 0.2:
+        background_image = np.full_like(image, 0)
+        resize_retio = random.uniform(0.85, 1.0)
+        image = cv2.resize(image, None, fx=resize_retio, fy=resize_retio, interpolation=cv2.INTER_CUBIC)
+        h, w, _ = image.shape
+        bg_h, bg_w, _ = background_image.shape
+        top = random.randint(0, bg_h - h)
+        left = random.randint(0, bg_w - w)
+        background_image[top:top + h, left:left + w] = image
+        image = background_image

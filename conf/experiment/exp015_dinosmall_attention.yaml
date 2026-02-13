@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /dir: kaggle
+  - override /dataset: deual
+  - override /model: dino_small
+  - override /training: default
+  - override /transform: transform_7
+
+exp_name: "exp006_dino_small_7transform"
+wandb_mode: "online"
+seed: 42

@@ -77,3 +77,47 @@ class BiomassTransformFactory:
             A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ToTensorV2(),
         ])
+
+class BiomassTransformFactory2:
+    def __init__(self, img_size: int):
+        self.img_size = img_size
+
+    def get_train_transforms(args):
+        return A.Compose([
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.5),
+            A.RandomRotate90(p=0.5),
+            A.GaussNoise(p=0.3),
+            A.RandomBrightnessContrast(
+                brightness_limit=0.2,
+                contrast_limit=0.2,
+                p=0.75
+            ),
+            A.HueSaturationValue(
+                hue_shift_limit=10,
+                sat_shift_limit=20,
+                val_shift_limit=20,
+                p=0.5
+            ),
+            A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=0.3), 
+            A.ColorJitter(
+                brightness=0.2, 
+                contrast=0.2, 
+                saturation=0.2, 
+                hue=0.1, 
+                p=0.75
+            ),
+            A.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
+            A.Resize(args.img_size, args.img_size),
+            ToTensorV2()
+        ])
+
+    def get_valid_transforms(self):
+        return A.Compose([
+            A.Resize(self.img_size, self.img_size),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ])

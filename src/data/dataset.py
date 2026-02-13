@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import pandas as pd
 import albumentations as A
+from src.utils.utils import *
 
 class DualStreamDataset(Dataset):
     """
@@ -58,7 +59,9 @@ class DualStreamDataset(Dataset):
         # Albumentationsは {'image': ...} を返すので ['image'] を取り出す
         if self.transform:
             img_left_tensor = self.transform(image=img_left)['image']
+            img_left_tensor = additional_transform(img_left_tensor)
             img_right_tensor = self.transform(image=img_right)['image']
+            img_right_tensor = additional_transform(img_right_tensor)
         else:
             # Transformがない場合のフォールバック
             img_left_tensor = torch.from_numpy(img_left.transpose(2, 0, 1)).float()
