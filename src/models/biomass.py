@@ -200,7 +200,8 @@ class BiomassModel2(nn.Module):
         pretrained: bool = True, 
         out_dim: int = 3,  
         drop_rate: float = 0.3,
-        freeze: bool = True
+        freeze: bool = True,
+        img_size: int = 512
     ):
         """
         Args:
@@ -216,6 +217,7 @@ class BiomassModel2(nn.Module):
             model_name,
             pretrained=pretrained,
             num_classes=0,
+            img_size=img_size
         )
 
         for param in self.backbone.parameters():
