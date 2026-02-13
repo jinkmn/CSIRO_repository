@@ -1,5 +1,5 @@
 # 画像サイズ (Transformで使用)
-img_size: 1024
+img_size: 518
 
 # ハイパーパラメータ
 epochs: 200
