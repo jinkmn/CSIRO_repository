@@ -58,10 +58,10 @@ class DualStreamDataset(Dataset):
         # 3. Transform適用
         # Albumentationsは {'image': ...} を返すので ['image'] を取り出す
         if self.transform:
-            img_left_tensor = self.transform(image=img_left)['image']
-            img_left_tensor = additional_transform(img_left_tensor)
-            img_right_tensor = self.transform(image=img_right)['image']
-            img_right_tensor = additional_transform(img_right_tensor)
+            img_left_tensor = additional_transform(img_left)
+            img_left_tensor = self.transform(image=img_left_tensor)['image']
+            img_right_tensor = additional_transform(img_right)
+            img_right_tensor = self.transform(image=img_right_tensor)['image']
         else:
             # Transformがない場合のフォールバック
             img_left_tensor = torch.from_numpy(img_left.transpose(2, 0, 1)).float()
