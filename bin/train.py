@@ -160,7 +160,7 @@ def main(cfg: DictConfig):
     val_transform = tf_factory.get_valid_transforms()
     
     for fold in range(3):
-        print(f"\n{'='*10} Fold {fold} {' ='*10}")
+        print(f"\n{'='*10} Fold {fold} {'='*10}")
         train_fold = train_df[train_df['fold'] != fold].reset_index(drop=True)
         val_fold = train_df[train_df['fold'] == fold].reset_index(drop=True)
         
@@ -232,7 +232,7 @@ def main(cfg: DictConfig):
         criterion = BiomassWeightedMSELoss(weights=[0.1, 0.1, 0.1, 0.5, 0.2], device=device)
         best_val_loss = float('inf')
         best_preds = None # (N_val, 3)
-        print('====Start Linear Probing====')
+        print(f'{'='*10}Start Linear Probing{'='*10}')
         for epoch in range(LP_epochs):
             train_loss = train_one_epoch(model, train_loader, optimizer_lp, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
             if scheduler is not None:
@@ -279,7 +279,7 @@ def main(cfg: DictConfig):
         scheduler_warmup_ft = LinearLR(optimizer_ft, start_factor=0.001, end_factor=1.0, total_iters=warmup_epochs)
         scheduler_cosine_ft = CosineAnnealingLR(optimizer_ft, T_max=FT_epochs - warmup_epochs, eta_min=1e-6)
         scheduler_ft = SequentialLR(optimizer_ft, schedulers=[scheduler_warmup_ft, scheduler_cosine_ft], milestones=[warmup_epochs])
-        print('====Start Fine Tuning====')
+        print(f'{'='*10}Start Fine Tuning{'='*10}')
         for epoch in range(FT_epochs):
             train_loss = train_one_epoch(model, train_loader, optimizer_ft, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
             if scheduler_ft is not None:
@@ -319,7 +319,7 @@ def main(cfg: DictConfig):
         for i, target_name in enumerate(train_targets_cols):
             oof_preds_dict[target_name][val_indices] = best_preds[:, i].flatten()
         
-        del model, optimizer, train_loader, val_loader
+        del model, optimizer_lp, optimizer_ft, train_loader, val_loader
         torch.cuda.empty_cache()
         gc.collect()
 
