@@ -4,7 +4,7 @@ img_size: 518
 # ハイパーパラメータ
 total_epochs: 400
 LP_rate: 0.25
-batch_size: 8
+batch_size: 16
 num_workers: 2
 accumulation_steps: 4
 lr: 1.0e-4 # 基本学習率 (AdamW)

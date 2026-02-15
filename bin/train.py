@@ -267,8 +267,12 @@ def main(cfg: DictConfig):
         unfreeze_backbone(model)
         optimizer_ft = torch.optim.AdamW([
             {'params': model.backbone.parameters(), 'lr': cfg.training.lr * 0.1},       # Backboneは超低速で微調整
-            {'params': model.fusion_attn.parameters(), 'lr': cfg.training.lr},    # Attention層は中速
-            {'params': model.regression_head.parameters(), 'lr': cfg.training.lr} # Head層も中速
+            {'params': model.fusion_attn.parameters(), 'lr': cfg.training.lr},   
+            {'params': model.head_total.parameters(), 'lr': cfg.training.lr}, 
+            {'params': model.head_gdm.parameters(), 'lr': cfg.training.lr},
+            {'params': model.head_green.parameters(), 'lr': cfg.training.lr},
+            {'params': model.head_dead.parameters(), 'lr': cfg.training.lr},
+            {'params': model.head_clover.parameters(), 'lr': cfg.training.lr}
         ])
 
         FT_epochs = total_epochs - LP_epochs
