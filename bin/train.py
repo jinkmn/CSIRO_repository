@@ -208,7 +208,7 @@ def main(cfg: DictConfig):
         optimizer_lp = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.training.lr, weight_decay=cfg.training.weight_decay)
         warmup_epochs = cfg.training.get("warmup_epochs", 1)
         total_epochs = cfg.training.total_epochs
-        LP_epochs = total_epochs*cfg.training.LP_rate
+        LP_epochs = int(total_epochs*cfg.training.LP_rate)
         
         scheduler_warmup = LinearLR(
         optimizer_lp, 

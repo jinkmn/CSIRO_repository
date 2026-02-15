@@ -233,8 +233,6 @@ class BiomassModel2(nn.Module):
             batch_first=True
         )
 
-        # 2. 予測ヘッド (改良版)
-        # 3つのターゲットに対し、それぞれ専用の層を用意
         self.head_total = self._create_head(self.embed_dim, drop_rate)
         self.head_gdm   = self._create_head(self.embed_dim, drop_rate)
         self.head_green = self._create_head(self.embed_dim, drop_rate)
