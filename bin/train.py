@@ -232,7 +232,7 @@ def main(cfg: DictConfig):
         criterion = BiomassWeightedMSELoss(weights=[0.1, 0.1, 0.1, 0.5, 0.2], device=device)
         best_val_loss = float('inf')
         best_preds = None # (N_val, 3)
-        
+        print('====Start Linear Probing====')
         for epoch in range(LP_epochs):
             train_loss = train_one_epoch(model, train_loader, optimizer_lp, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
             if scheduler is not None:
@@ -248,7 +248,7 @@ def main(cfg: DictConfig):
             
             mean_rmse = np.mean(rmse_per_target)
 
-            print(f"Epoch {epoch+1}/{cfg.training.epochs} | "
+            print(f"LP Epoch {epoch+1}/{LP_epochs} | "
                   f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Mean RMSE: {mean_rmse:.4f}")
             
             wandb.log({
@@ -275,7 +275,7 @@ def main(cfg: DictConfig):
         scheduler_warmup_ft = LinearLR(optimizer_ft, start_factor=0.001, end_factor=1.0, total_iters=warmup_epochs)
         scheduler_cosine_ft = CosineAnnealingLR(optimizer_ft, T_max=FT_epochs - warmup_epochs, eta_min=1e-6)
         scheduler_ft = SequentialLR(optimizer_ft, schedulers=[scheduler_warmup_ft, scheduler_cosine_ft], milestones=[warmup_epochs])
-
+        print('====Start Fine Tuning====')
         for epoch in range(FT_epochs):
             train_loss = train_one_epoch(model, train_loader, optimizer_ft, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
             if scheduler_ft is not None:
@@ -291,7 +291,7 @@ def main(cfg: DictConfig):
             
             mean_rmse = np.mean(rmse_per_target)
 
-            print(f"Epoch {epoch+1}/{cfg.training.epochs} | "
+            print(f"FT Epoch {epoch+1}/{FT_epochs} | "
                   f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Mean RMSE: {mean_rmse:.4f}")
             
             wandb.log({
