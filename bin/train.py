@@ -102,6 +102,11 @@ def validate(model, loader, criterion, device):
     
     return epoch_loss, preds, trues
 
+def unfreeze_backbone(model):
+    """Backboneの重みの固定を解除する（FT用）"""
+    for param in model.backbone.parameters():
+        param.requires_grad = True
+
 # ==============================================================================
 # Main Training Script
 # ==============================================================================
@@ -200,25 +205,26 @@ def main(cfg: DictConfig):
 
         model_ema = ModelEmaV2(model, decay=0.999, device=device)
         
-        optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.training.lr, weight_decay=cfg.training.weight_decay)
+        optimizer_lp = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.training.lr, weight_decay=cfg.training.weight_decay)
         warmup_epochs = cfg.training.get("warmup_epochs", 1)
-        total_epochs = cfg.training.epochs
+        total_epochs = cfg.training.total_epochs
+        LP_epochs = total_epochs*cfg.training.LP_rate
         
         scheduler_warmup = LinearLR(
-        optimizer, 
+        optimizer_lp, 
         start_factor=0.001, 
         end_factor=1.0,    
         total_iters=warmup_epochs
         )
 
         scheduler_cosine = CosineAnnealingLR(
-        optimizer, 
-        T_max=total_epochs - warmup_epochs, 
+        optimizer_lp, 
+        T_max=LP_epochs - warmup_epochs, 
         eta_min=cfg.training.get("min_lr", 1e-6)
         )
     
         scheduler = SequentialLR(
-        optimizer,
+        optimizer_lp,
         schedulers=[scheduler_warmup, scheduler_cosine],
         milestones=[warmup_epochs]
         )
@@ -227,10 +233,53 @@ def main(cfg: DictConfig):
         best_val_loss = float('inf')
         best_preds = None # (N_val, 3)
         
-        for epoch in range(cfg.training.epochs):
-            train_loss = train_one_epoch(model, train_loader, optimizer, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
+        for epoch in range(LP_epochs):
+            train_loss = train_one_epoch(model, train_loader, optimizer_lp, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
             if scheduler is not None:
                 scheduler.step()
+            val_loss, val_preds, val_trues = validate(model_ema.module, val_loader, criterion, device)
+            
+
+            rmse_per_target = []
+            for i, target_name in enumerate(train_targets_cols):
+                rmse = np.sqrt(mean_squared_error(val_trues[:, i], val_preds[:, i]))
+                rmse_per_target.append(rmse)
+                wandb.log({f"fold{fold}/{target_name}_rmse": rmse})
+            
+            mean_rmse = np.mean(rmse_per_target)
+
+            print(f"Epoch {epoch+1}/{cfg.training.epochs} | "
+                  f"Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Mean RMSE: {mean_rmse:.4f}")
+            
+            wandb.log({
+                f"fold{fold}/train_loss": train_loss,
+                f"fold{fold}/val_loss": val_loss,
+                f"fold{fold}/mean_rmse": mean_rmse
+            })
+            
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_preds = val_preds
+                
+                save_path = OUTPUT_DIR / f"best_model_fold{fold}.pth"
+                torch.save(model_ema.module.state_dict(), save_path)
+            
+        unfreeze_backbone(model)
+        optimizer_ft = torch.optim.AdamW([
+            {'params': model.backbone.parameters(), 'lr': cfg.training.lr * 0.1},       # Backboneは超低速で微調整
+            {'params': model.fusion_attn.parameters(), 'lr': cfg.training.lr},    # Attention層は中速
+            {'params': model.regression_head.parameters(), 'lr': cfg.training.lr} # Head層も中速
+        ])
+
+        FT_epochs = total_epochs - LP_epochs
+        scheduler_warmup_ft = LinearLR(optimizer_ft, start_factor=0.001, end_factor=1.0, total_iters=warmup_epochs)
+        scheduler_cosine_ft = CosineAnnealingLR(optimizer_ft, T_max=FT_epochs - warmup_epochs, eta_min=1e-6)
+        scheduler_ft = SequentialLR(optimizer_ft, schedulers=[scheduler_warmup_ft, scheduler_cosine_ft], milestones=[warmup_epochs])
+
+        for epoch in range(FT_epochs):
+            train_loss = train_one_epoch(model, train_loader, optimizer_ft, criterion, device, model_ema=model_ema, accumulation_steps=cfg.training.get("accumulation_steps",1))
+            if scheduler_ft is not None:
+                scheduler_ft.step()
             val_loss, val_preds, val_trues = validate(model_ema.module, val_loader, criterion, device)
             
 
